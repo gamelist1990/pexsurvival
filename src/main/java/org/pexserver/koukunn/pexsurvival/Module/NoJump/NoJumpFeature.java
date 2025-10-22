@@ -3,6 +3,7 @@ package org.pexserver.koukunn.pexsurvival.Module.NoJump;
 import org.pexserver.koukunn.pexsurvival.Core.Feature.Feature;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.GameMode;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -56,6 +57,10 @@ public class NoJumpFeature implements Feature {
         if (!enabled)
             return;
 
+        Player player = event.getPlayer();
+        // クリエイティブとスペクテイターは対象外
+        if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) return;
+
         // ジャンプ（フライトトグル）を禁止
         if (event.isFlying()) {
             event.setCancelled(true);
@@ -73,6 +78,9 @@ public class NoJumpFeature implements Feature {
         double fromY = event.getFrom().getY();
         double toY = event.getTo().getY();
         Player player = event.getPlayer();
+
+        // クリエイティブとスペクテイターは対象外
+        if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) return;
 
         if (toY > fromY + 0.01) {
             double vy = player.getVelocity().getY();

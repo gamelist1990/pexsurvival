@@ -6,6 +6,7 @@ import org.pexserver.koukunn.pexsurvival.Core.Feature.FeatureManager;
 import org.pexserver.koukunn.pexsurvival.Commands.Pex.PexCommand;
 import org.pexserver.koukunn.pexsurvival.Commands.help.HelpCommand;
 import org.pexserver.koukunn.pexsurvival.Module.NoJump.NoJumpFeature;
+import org.pexserver.koukunn.pexsurvival.Module.MobBoom.MobBoomFeature;
 
 public final class Loader extends JavaPlugin {
 
@@ -41,6 +42,7 @@ public final class Loader extends JavaPlugin {
      */
     private void registerFeatures() {
         featureManager.registerFeature(new NoJumpFeature());
+        featureManager.registerFeature(new MobBoomFeature());
         // 他の機能はここに追加できます
     }
 
