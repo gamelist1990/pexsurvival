@@ -1,6 +1,6 @@
 name: pexsurvival
 version: '1.0-SNAPSHOT'
-main: org.pexserver.koukunn.pexsurvival.Pexsurvival
+main: org.pexserver.koukunn.pexsurvival.Loader
 api-version: '1.21'
 authors: [ Koukunn ]
 description: PEXServer Plugin

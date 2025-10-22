@@ -6,6 +6,7 @@ import org.pexserver.koukunn.pexsurvival.Core.Command.CompletionUtils;
 import org.pexserver.koukunn.pexsurvival.Core.Feature.FeatureManager;
 import org.bukkit.command.CommandSender;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -80,9 +81,11 @@ public class PexCommand extends BaseCommand {
         }
 
         boolean enabled = featureManager.toggleFeature(featureName);
+        // 無効な機能が設定ファイルに残っている場合は自動で削除
+        featureManager.cleanupConfig();
+
         String status = enabled ? "§a有効" : "§c無効";
-        
-        sender.sendMessage(Component.text("§b[PEX] " + featureName + " を " + status + "§b に切り替えました"));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b[PEX] " + featureName + " を " + status + "§b に切り替えました"));
         return true;
     }
 
@@ -90,7 +93,7 @@ public class PexCommand extends BaseCommand {
      * list サブコマンド処理
      */
     private boolean handleList(CommandSender sender, String[] args) {
-        sender.sendMessage(Component.text("§b========== 登録済み機能一覧 =========="));
+    sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b========== 登録済み機能一覧 =========="));
 
         if (featureManager.getFeatures().isEmpty()) {
             sender.sendMessage(Component.text("§c登録済みの機能がありません"));
@@ -101,11 +104,11 @@ public class PexCommand extends BaseCommand {
         for (String name : featureManager.getFeatures().keySet()) {
             var feature = featureManager.getFeature(name);
             String status = feature.isEnabled() ? "§a有効" : "§c無効";
-            sender.sendMessage(Component.text("§e• " + name + " " + status + 
+            sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e• " + name + " " + status + 
                                              "§f - " + feature.getDescription()));
         }
 
-        sender.sendMessage(Component.text("§b========================================"));
+    sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b========================================"));
         return true;
     }
 

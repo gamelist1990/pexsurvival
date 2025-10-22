@@ -40,6 +40,10 @@ public class HelpCommand extends BaseCommand {
         sender.sendMessage("§b========== PEX Survival コマンド一覧 ==========");
 
         for (BaseCommand cmd : commandManager.getCommands().values()) {
+            // 実行者がそのコマンドを実行できるか確認（カスタム権限 or PermissionLevel）
+            boolean canUse = cmd.getPermissionLevel().hasAccess(sender, cmd.getPermission());
+            if (!canUse) continue; // 権限がなければ表示しない
+
             PermissionLevel permLevel = cmd.getPermissionLevel();
             String permText = "§e[" + permLevel.getDescription() + "]";
             sender.sendMessage("§f/" + cmd.getName() + " " + permText + " - " + cmd.getDescription());

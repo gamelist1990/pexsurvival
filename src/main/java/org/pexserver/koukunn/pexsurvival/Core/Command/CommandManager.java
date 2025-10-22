@@ -5,7 +5,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
-import net.kyori.adventure.text.Component;
+// Component import not required; using LegacyComponentSerializer for legacy-formatted messages
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -131,11 +132,19 @@ public class CommandManager {
         }
 
         @Override
+        public boolean testPermissionSilent(org.bukkit.command.CommandSender sender) {
+            // Brigadier / Bukkit の候補表示などはこのメソッドで権限チェックされることがあるため
+            // カスタム権限 (getPermission) がある場合はそれを優先し、無ければ PermissionLevel を利用する
+            PermissionLevel permLevel = command.getPermissionLevel();
+            return permLevel.hasAccess(sender, command.getPermission());
+        }
+
+        @Override
         public boolean execute(CommandSender sender, String commandLabel, String[] args) {
             // 権限チェック（PermissionLevel + カスタム権限）
             PermissionLevel permLevel = command.getPermissionLevel();
             if (!permLevel.hasAccess(sender, command.getPermission())) {
-                sender.sendMessage(Component.text("§c権限がありません: " + permLevel.getDescription()));
+                sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§c権限がありません: " + permLevel.getDescription()));
                 return true;
             }
 
@@ -145,7 +154,7 @@ public class CommandManager {
             } catch (Exception e) {
                 plugin.getLogger().warning("コマンド実行エラー: " + command.getName());
                 e.printStackTrace();
-                sender.sendMessage(Component.text("§cコマンド実行中にエラーが発生しました"));
+                sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§cコマンド実行中にエラーが発生しました"));
                 return true;
             }
         }

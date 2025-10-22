@@ -11,18 +11,27 @@ public final class Loader extends JavaPlugin {
 
     private CommandManager commandManager;
     private FeatureManager featureManager;
+    private org.pexserver.koukunn.pexsurvival.Core.Config.ConfigManager configManager;
 
     @Override
     public void onEnable() {
         // マネージャーを初期化
         commandManager = new CommandManager(this);
         featureManager = new FeatureManager(this);
+        // ConfigManager を初期化（PEXConfig フォルダを作成）
+        configManager = new org.pexserver.koukunn.pexsurvival.Core.Config.ConfigManager(this);
+        // ConfigManager を初期化（PEXConfig フォルダを作成）
 
         // 機能を登録
         registerFeatures();
+        // 機能登録後に設定のクリーンアップ（不要なエントリを削除）を行う
+        if (featureManager != null) {
+            featureManager.cleanupConfig();
+        }
 
         // コマンドを登録
         registerCommands();
+
 
         getLogger().info("PEX Survival Plugin が有効になりました");
     }
@@ -62,6 +71,10 @@ public final class Loader extends JavaPlugin {
      */
     public FeatureManager getFeatureManager() {
         return featureManager;
+    }
+
+    public org.pexserver.koukunn.pexsurvival.Core.Config.ConfigManager getConfigManager() {
+        return configManager;
     }
 
     @Override

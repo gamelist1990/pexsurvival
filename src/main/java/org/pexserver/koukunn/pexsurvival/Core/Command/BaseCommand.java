@@ -1,6 +1,7 @@
 package org.pexserver.koukunn.pexsurvival.Core.Command;
 
-import net.kyori.adventure.text.Component;
+// Component is not used directly; use LegacyComponentSerializer for legacy-formatted messages
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import java.util.*;
 
@@ -82,7 +83,7 @@ public abstract class BaseCommand {
      * @param message メッセージ
      */
     protected void sendError(CommandSender sender, String message) {
-        sender.sendMessage(Component.text("§c[エラー] " + message));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§c[エラー] " + message));
     }
 
     /**
@@ -91,7 +92,7 @@ public abstract class BaseCommand {
      * @param message メッセージ
      */
     protected void sendSuccess(CommandSender sender, String message) {
-        sender.sendMessage(Component.text("§a[成功] " + message));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§a[成功] " + message));
     }
 
     /**
@@ -100,6 +101,6 @@ public abstract class BaseCommand {
      * @param message メッセージ
      */
     protected void sendInfo(CommandSender sender, String message) {
-        sender.sendMessage(Component.text("§b[情報] " + message));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b[情報] " + message));
     }
 }

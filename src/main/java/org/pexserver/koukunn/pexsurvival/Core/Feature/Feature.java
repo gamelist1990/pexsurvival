@@ -40,4 +40,14 @@ public interface Feature extends Listener {
      * 機能をリロードします
      */
     void reload();
+
+    /**
+     * この機能のデフォルトの有効/無効値を返します。
+     * 既存互換のためデフォルトは true（従来の振る舞い）です。
+     * 実行環境では Config の "states" が存在する場合はそれを優先し、
+     * "states" が存在するが当該キーが無ければ無効とみなします。
+     */
+    default boolean getDefaultEnabled() {
+        return false;
+    }
 }
