@@ -45,7 +45,7 @@ public class MobPanicDisaster implements Disaster {
             @Override
             public void run() {
                 try {
-                    if (spawned >= 50) {
+                    if (spawned >= 10) {
                         this.cancel();
                         return;
                     }
