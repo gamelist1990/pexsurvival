@@ -12,15 +12,13 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.Enderman;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 public class MobBoomFeature implements Feature {
 
@@ -30,7 +28,7 @@ public class MobBoomFeature implements Feature {
     private final Map<Entity, Long> mobBoomSchedule = new HashMap<>();
     private final long WARNING_COOLDOWN = 500;
     private final Map<Entity, Long> lastWarningTime = new HashMap<>();
-    private final Map<UUID, ExplosionInfo> recentExplosionVictims = new ConcurrentHashMap<>();
+    // recentExplosionVictims removed because onPlayerDeath handler was deleted
 
     @Override
     public String getFeatureName() {
@@ -107,7 +105,7 @@ public class MobBoomFeature implements Feature {
 
         playWarningSound(mob);
 
-        scheduleExplosion(mob, delaySeconds);
+        scheduleExplosion(mob, delaySeconds, player);
     }
 
     private void playWarningSound(LivingEntity mob) {
@@ -125,7 +123,7 @@ public class MobBoomFeature implements Feature {
         mobLoc.getWorld().playSound(mobLoc, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
     }
 
-    private void scheduleExplosion(LivingEntity mob, long delaySeconds) {
+    private void scheduleExplosion(LivingEntity mob, long delaySeconds, Player cause) {
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -136,7 +134,7 @@ public class MobBoomFeature implements Feature {
                     return;
                 }
 
-                explodeMob(mob);
+                explodeMob(mob, cause);
                 mobBoomSchedule.remove(mob);
                 lastWarningTime.remove(mob);
                 cancel();
@@ -144,7 +142,7 @@ public class MobBoomFeature implements Feature {
         }.runTaskLater(Bukkit.getPluginManager().getPlugin("pexsurvival"), delaySeconds * 20L);
     }
 
-    private void explodeMob(LivingEntity mob) {
+    private void explodeMob(LivingEntity mob, Player cause) {
         Location mobLoc = mob.getLocation();
 
         mob.setVelocity(mob.getVelocity().setY(1.5));
@@ -153,45 +151,29 @@ public class MobBoomFeature implements Feature {
 
         mobLoc.getWorld().playSound(mobLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 1.0f);
 
-        float explosionPower = 2.0f + random.nextFloat() * 2.0f;
+        float explosionPower = 10.0f + random.nextFloat() * 2.0f;
+        // explosion の setFire を true にして、サーバーに火をつける挙動を許可
         mobLoc.getWorld().createExplosion(mobLoc.getX(), mobLoc.getY(), mobLoc.getZ(), explosionPower, false, true);
 
-        String mobName = mob.getCustomName() != null ? mob.getCustomName() : mob.getType().name().toLowerCase();
-        long expiry = System.currentTimeMillis() + 10_000;
+
+        // 近くのプレイヤーに燃焼を与える（10秒）
         for (Player p : mobLoc.getWorld().getPlayers()) {
-            if (p.getLocation().distanceSquared(mobLoc) <= (explosionPower * explosionPower * 4)) {
-                recentExplosionVictims.put(p.getUniqueId(), new ExplosionInfo(mobName, expiry));
+            double dsq = p.getLocation().distanceSquared(mobLoc);
+            double rangeSq = (explosionPower * explosionPower * 4);
+            if (dsq <= rangeSq) {
+                p.setFireTicks(20 * 10);
             }
         }
 
-        if (!mob.isDead() && mob.isValid()) {
+        // Player インスタンスに対して remove() を呼ばない（CraftPlayer.remove は例外を投げるため）
+        if (!mob.isDead() && mob.isValid() && !(mob instanceof Player)) {
             mob.remove();
         }
     }
 
-    @EventHandler
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        ExplosionInfo info = recentExplosionVictims.remove(player.getUniqueId());
-        if (info == null)
-            return;
-        if (System.currentTimeMillis() > info.expiry)
-            return;
+    // onPlayerDeath handler removed: death message handling is disabled per request
 
-        String mobName = info.mobName;
-        String msg = String.format("%s に爆破された", mobName);
-        event.setDeathMessage(msg);
-    }
-
-    private static class ExplosionInfo {
-        final String mobName;
-        final long expiry;
-
-        ExplosionInfo(String mobName, long expiry) {
-            this.mobName = mobName;
-            this.expiry = expiry;
-        }
-    }
+    // ExplosionInfo removed because onPlayerDeath was deleted
 
     private void spawnExplosionParticles(Location center) {
         org.bukkit.World world = center.getWorld();
