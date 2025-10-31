@@ -51,14 +51,57 @@ TL;DR — 既存の災害処理を堅牢化し、災害のデフォルト持続�
 - 既存の `ConfigManager` を流用して `PEXConfig` に JSON ファイルを保管する。
 - 互換性重視で既存の機能呼び出し順序は極力変えず、設定化と堅牢化を優先する。
 
-## 予定タスク（短いチェックリスト）
-- [ ] `docs/disasters-plan.md` に計画を保存（完了）
-- [ ] `NaturalDisasterFeature` の修正
-- [ ] `PEXConfig/naturaldisaster.json` の追加
-- [ ] `MobPanicDisaster` の修正
-- [ ] `ToxicFogDisaster` の実装と登録
+## 実装状態
+
+### ✅ 完了
+- [ ] 計画ドキュメント作成
+- [ ] 設定ファイル追加 (PEXConfig/naturaldisaster.json)
+- [ ] NaturalDisasterFeature の設定対応
+- [ ] MobPanicDisaster の堅牢化
+- [ ] ToxicFogDisaster の実装
+- [ ] DisasterRegistry への登録
 - [ ] ドキュメント更新
-- [ ] 動作確認
 
----
+### 📝 設定ファイル構造
 
+```json
+{
+  "default_min_seconds": 30,
+  "default_max_seconds": 60,
+  "per_disaster": {
+    "earthquake": {
+      "min_seconds": 20,
+      "max_seconds": 40
+    }
+  }
+}
+```
+
+### 🔧 主な変更点
+
+1. **NaturalDisasterFeature.java**
+   - 静的な MIN/MAX_DISASTER_DURATION を削除
+   - インスタンスフィールド minDurationTicks/maxDurationTicks を追加
+   - ConfigManager から設定を読み込み
+   - Plugin インスタンスを保持してタスクに渡す
+
+2. **MobPanicDisaster.java**
+   - spawned 上限を 50 に修正（コメントとの整合性）
+   - Plugin インスタンスをコンストラクタで受け取る
+   - retarget タスクを追跡してキャンセル可能に
+   - activeWorlds の cleanup 処理を改善
+
+3. **ToxicFogDisaster.java** (新規)
+   - 毒霧効果を実装
+   - プレイヤーに毒エフェクトとパーティクルを付与
+   - 視界妨害効果
+
+4. **DisasterRegistry.java**
+   - ToxicFogDisaster を登録
+   - Plugin インスタンスを必要とする Disaster に対応
+
+## 今後の拡張可能性
+- 災害ごとの個別設定 (per_disaster)
+- 災害の重み付け（発生確率）
+- 災害の有効/無効切り替え
+- 災害固有のパラメータ設定

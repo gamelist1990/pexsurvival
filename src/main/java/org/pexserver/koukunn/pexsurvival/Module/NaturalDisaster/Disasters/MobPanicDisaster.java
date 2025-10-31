@@ -9,10 +9,11 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -21,8 +22,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MobPanicDisaster implements Disaster {
 
+    private final Plugin plugin;
+    
     // 同一ワールドで同時に複数のスポーンランナブルが動作しないようにするガード
     private static final Set<java.util.UUID> activeWorlds = ConcurrentHashMap.newKeySet();
+    
+    // 各Mobの再ターゲットタスクを管理
+    private static final Map<java.util.UUID, Set<BukkitTask>> mobTasks = new ConcurrentHashMap<>();
+    
+    public MobPanicDisaster(Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public String getName() {
@@ -45,7 +55,8 @@ public class MobPanicDisaster implements Disaster {
             @Override
             public void run() {
                 try {
-                    if (spawned >= 10) {
+                    // コメントとの整合性：合計50体に変更
+                    if (spawned >= 50) {
                         this.cancel();
                         return;
                     }
@@ -78,12 +89,17 @@ public class MobPanicDisaster implements Disaster {
                     }
 
                     // 各Mobごとに短い間隔で再ターゲットを行い、リアルタイム追尾を維持する
-                    new BukkitRunnable() {
+                    BukkitTask retargetTask = new BukkitRunnable() {
                         @Override
                         public void run() {
                             try {
                                 if (mob == null || mob.isDead()) {
                                     this.cancel();
+                                    // タスクをリストから削除
+                                    Set<BukkitTask> tasks = mobTasks.get(worldId);
+                                    if (tasks != null) {
+                                        tasks.remove(this);
+                                    }
                                     return;
                                 }
 
@@ -94,9 +110,17 @@ public class MobPanicDisaster implements Disaster {
                             } catch (Exception e) {
                                 Bukkit.getLogger().warning("Mob retarget task error: " + e.getMessage());
                                 this.cancel();
+                                // タスクをリストから削除
+                                Set<BukkitTask> tasks = mobTasks.get(worldId);
+                                if (tasks != null) {
+                                    tasks.remove(this);
+                                }
                             }
                         }
-                    }.runTaskTimer(Bukkit.getPluginManager().getPlugin("pexsurvival"), 0L, 10L); // 10ティックごと
+                    }.runTaskTimer(plugin, 0L, 10L); // 10ティックごと
+                    
+                    // タスクを追跡
+                    mobTasks.computeIfAbsent(worldId, k -> ConcurrentHashMap.newKeySet()).add(retargetTask);
 
                     spawned++;
                 } catch (Exception e) {
@@ -110,8 +134,10 @@ public class MobPanicDisaster implements Disaster {
                 super.cancel();
                 // 終了時にワールドガードを解除する
                 activeWorlds.remove(worldId);
+                // すべての再ターゲットタスクをキャンセル
+                cancelAllTasks(worldId);
             }
-        }.runTaskTimer(Bukkit.getPluginManager().getPlugin("pexsurvival"), 0L, 20L);
+        }.runTaskTimer(plugin, 0L, 20L);
     }
 
     /**
@@ -128,5 +154,30 @@ public class MobPanicDisaster implements Disaster {
             }
         }
         return nearest;
+    }
+    
+    /**
+     * 指定ワールドのすべてのタスクをキャンセル
+     */
+    private static void cancelAllTasks(java.util.UUID worldId) {
+        Set<BukkitTask> tasks = mobTasks.remove(worldId);
+        if (tasks != null) {
+            for (BukkitTask task : tasks) {
+                if (task != null && !task.isCancelled()) {
+                    task.cancel();
+                }
+            }
+            tasks.clear();
+        }
+    }
+    
+    /**
+     * すべてのワールドのタスクをキャンセル（プラグイン無効化時に使用）
+     */
+    public static void cancelAllTasksGlobal() {
+        for (java.util.UUID worldId : new HashSet<>(mobTasks.keySet())) {
+            cancelAllTasks(worldId);
+        }
+        activeWorlds.clear();
     }
 }
