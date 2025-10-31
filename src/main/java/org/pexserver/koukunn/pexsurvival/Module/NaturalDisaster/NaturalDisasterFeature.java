@@ -3,14 +3,21 @@ package org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster;
 import org.pexserver.koukunn.pexsurvival.Core.Feature.Feature;
 import org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster.Disasters.DisasterRegistry;
 import org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster.Disasters.Disaster;
+import org.pexserver.koukunn.pexsurvival.Core.Config.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.entity.Player;
+import com.google.gson.Gson;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -21,6 +28,7 @@ public class NaturalDisasterFeature implements Feature {
     private boolean enabled = false;
     private final Random random = new Random();
     private BukkitRunnable disasterTask;
+    private Plugin plugin;
     
     // ワールドごとのボスバー管理
     private final Map<String, BossBar> bossBars = new HashMap<>();
@@ -36,9 +44,9 @@ public class NaturalDisasterFeature implements Feature {
     // ワールドごとの火災カウンター（5秒ごとに火を広げる）
     private final Map<String, Integer> fireCounters = new HashMap<>();
     
-    // 災害の継続時間（ティック）：2分～4分 = 2400～4800ティック
-    private static final int MIN_DISASTER_DURATION = 2400; // 2分
-    private static final int MAX_DISASTER_DURATION = 4800; // 4分
+    // 災害の継続時間（ティック）：設定ファイルから読み込む
+    private int minDurationTicks = 600;  // デフォルト30秒
+    private int maxDurationTicks = 1200; // デフォルト60秒
     private static final int DISASTER_INTERVAL = 20; // 1秒ごと（20ティック）
     private static final int FIRE_SPREAD_INTERVAL = 100; // 5秒ごと（100ティック）
 
@@ -61,9 +69,22 @@ public class NaturalDisasterFeature implements Feature {
     public void enable() {
         if (enabled) return;
         
+        // プラグインインスタンスを取得
+        plugin = Bukkit.getPluginManager().getPlugin("pexsurvival");
+        if (plugin == null) {
+            Bukkit.getLogger().severe("プラグインインスタンスが見つかりません！");
+            return;
+        }
+        
+        // DisasterRegistryを初期化
+        DisasterRegistry.initialize(plugin);
+        
+        // 設定を読み込む
+        loadConfig();
+        
         enabled = true;
         startDisasterTask();
-        Bukkit.getLogger().info("自然災害機能が有効になりました");
+        Bukkit.getLogger().info("自然災害機能が有効になりました (持続時間: " + (minDurationTicks/20) + "-" + (maxDurationTicks/20) + "秒)");
     }
 
     @Override
@@ -107,7 +128,7 @@ public class NaturalDisasterFeature implements Feature {
         };
         
         // 1秒（20ティック）ごとに実行
-        disasterTask.runTaskTimer(Bukkit.getPluginManager().getPlugin("pexsurvival"), 0, DISASTER_INTERVAL);
+        disasterTask.runTaskTimer(plugin, 0, DISASTER_INTERVAL);
     }
 
     /**
@@ -135,7 +156,7 @@ public class NaturalDisasterFeature implements Feature {
             
             // 新しい災害を開始
             Disaster disaster = DisasterRegistry.getRandomDisaster(random);
-            int duration = random.nextInt(MAX_DISASTER_DURATION - MIN_DISASTER_DURATION + 1) + MIN_DISASTER_DURATION;
+            int duration = random.nextInt(maxDurationTicks - minDurationTicks + 1) + minDurationTicks;
             
             currentDisasters.put(worldName, disaster);
             remainingTimes.put(worldName, duration);
@@ -206,7 +227,7 @@ public class NaturalDisasterFeature implements Feature {
         // ボスバーを更新
         BossBar bossBar = bossBars.get(worldName);
         if (bossBar != null) {
-            int maxDuration = maxDurations.getOrDefault(worldName, MAX_DISASTER_DURATION);
+            int maxDuration = maxDurations.getOrDefault(worldName, maxDurationTicks);
             double progress = Math.max(0.0, (double) remaining / (double) maxDuration);
             
             bossBar.setProgress(progress);
@@ -229,9 +250,62 @@ public class NaturalDisasterFeature implements Feature {
     }
     
     /**
-     * プレイヤーの位置から最低50ブロック離れた場所を計算
+     * 設定ファイルから災害の持続時間を読み込む
      */
-    // (以前はプレイヤーから離れた位置に災害を生成していましたが)
-    // 現在は災害はターゲットプレイヤーを追尾する設計のため、このメソッドは不要です。
+    private void loadConfig() {
+        File configFile = new File(plugin.getDataFolder(), "PEXConfig/naturaldisaster.json");
+        
+        // 設定ファイルが存在しない場合はデフォルト設定で作成
+        if (!configFile.exists()) {
+            createDefaultConfig(configFile);
+        }
+        
+        // 設定ファイルを読み込む
+        try (FileReader reader = new FileReader(configFile)) {
+            Gson gson = new Gson();
+            DisasterConfig config = gson.fromJson(reader, DisasterConfig.class);
+            
+            if (config != null) {
+                // 秒をティックに変換（1秒 = 20ティック）
+                minDurationTicks = config.getDefaultMinSeconds() * 20;
+                maxDurationTicks = config.getDefaultMaxSeconds() * 20;
+                
+                Bukkit.getLogger().info("災害設定を読み込みました: " + config.getDefaultMinSeconds() + "-" + config.getDefaultMaxSeconds() + "秒");
+            }
+        } catch (IOException e) {
+            Bukkit.getLogger().warning("災害設定の読み込みに失敗しました。デフォルト設定を使用します: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * デフォルト設定ファイルを作成
+     */
+    private void createDefaultConfig(File configFile) {
+        try {
+            // 親ディレクトリを作成
+            configFile.getParentFile().mkdirs();
+            
+            // デフォルト設定を作成
+            DisasterConfig defaultConfig = new DisasterConfig();
+            defaultConfig.setDefaultMinSeconds(30);
+            defaultConfig.setDefaultMaxSeconds(60);
+            
+            // JSONに書き込む
+            try (FileWriter writer = new FileWriter(configFile)) {
+                Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+                gson.toJson(defaultConfig, writer);
+                Bukkit.getLogger().info("デフォルト災害設定ファイルを作成しました: " + configFile.getPath());
+            }
+        } catch (IOException e) {
+            Bukkit.getLogger().warning("デフォルト設定ファイルの作成に失敗しました: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * プラグインインスタンスを取得（他のクラスからアクセス可能）
+     */
+    public Plugin getPlugin() {
+        return plugin;
+    }
 }
 
