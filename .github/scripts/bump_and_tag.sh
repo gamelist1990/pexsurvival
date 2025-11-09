@@ -25,17 +25,28 @@ new_patch=$((patch + 1))
 new_version="${major}.${minor}.${new_patch}"
 
 # Replace the first occurrence of version in build.gradle
-perl -0777 -pe "s/(version\s*[:=]?\s*['\"]) [^'\"]+ (['\"]) /\$1${new_version}\$2/sex" -i build.gradle || true
-# Fallback safer replace if perl expression above didn't match
-perl -0777 -pe "s/(version\s*[:=]?\s*['\"]) [^'\"]+ (['\"]) /\$1${new_version}\$2/;" -i build.gradle || true
+# Prefer Python if available for robust regex replacement
+if command -v python3 >/dev/null 2>&1; then
+  python3 - <<PY
+import re
+text = open('build.gradle', 'r', encoding='utf-8').read()
+new = re.sub(r"(version\s*[:=]?\s*['\"]) [^'\"]+ (['\"])", r"\1" + "${new_version}" + r"\2", text, count=1)
+open('build.gradle', 'w', encoding='utf-8').write(new)
+PY
+else
+  # Fallback to sed (GNU sed compatible)
+  sed -E -i "s/(version\s*[:=]?\s*['\"]).*(['\"])$/\1${new_version}\2/" build.gradle || true
+fi
 
 # Configure git and push commit + tag
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git add build.gradle
-git commit -m "chore(release): bump version to ${new_version}" || true
-git tag -a "v${new_version}" -m "Release ${new_version}" || true
-git push origin HEAD || true
-git push origin "v${new_version}" || true
+git add build.gradle >/dev/null 2>&1 || true
+git commit -m "chore(release): bump version to ${new_version}" >/dev/null 2>&1 || true
+git tag -a "v${new_version}" -m "Release ${new_version}" >/dev/null 2>&1 || true
+# Suppress push output (so Actions won't capture unrelated lines)
+git push origin HEAD >/dev/null 2>&1 || true
+git push origin "v${new_version}" >/dev/null 2>&1 || true
 
-echo "${new_version}"
+# Only print the new version on stdout (useful for CI to capture)
+printf "%s\n" "${new_version}"

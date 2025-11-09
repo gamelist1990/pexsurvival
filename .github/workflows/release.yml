@@ -27,7 +27,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x .github/scripts/bump_and_tag.sh
-          new_version=$(.github/scripts/bump_and_tag.sh)
+          # capture only the last line (the script prints only the version as the last line)
+          new_version=$(./.github/scripts/bump_and_tag.sh | tail -n1)
           echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 
       - name: Build with Gradle
