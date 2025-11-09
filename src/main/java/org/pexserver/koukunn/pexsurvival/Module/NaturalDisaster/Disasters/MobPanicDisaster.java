@@ -90,6 +90,7 @@ public class MobPanicDisaster implements Disaster {
 
                     // 各Mobごとに短い間隔で再ターゲットを行い、リアルタイム追尾を維持する
                     BukkitTask retargetTask = new BukkitRunnable() {
+                        @SuppressWarnings("unlikely-arg-type")
                         @Override
                         public void run() {
                             try {

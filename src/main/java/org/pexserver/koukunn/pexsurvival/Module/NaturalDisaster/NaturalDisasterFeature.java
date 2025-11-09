@@ -3,7 +3,6 @@ package org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster;
 import org.pexserver.koukunn.pexsurvival.Core.Feature.Feature;
 import org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster.Disasters.DisasterRegistry;
 import org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster.Disasters.Disaster;
-import org.pexserver.koukunn.pexsurvival.Core.Config.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.boss.BarColor;
