@@ -5,7 +5,6 @@ import org.pexserver.koukunn.pexsurvival.Core.Command.PermissionLevel;
 import org.pexserver.koukunn.pexsurvival.Core.Command.CompletionUtils;
 import org.pexserver.koukunn.pexsurvival.Core.Feature.FeatureManager;
 import org.bukkit.command.CommandSender;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,8 +95,8 @@ public class PexCommand extends BaseCommand {
     sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b========== 登録済み機能一覧 =========="));
 
         if (featureManager.getFeatures().isEmpty()) {
-            sender.sendMessage(Component.text("§c登録済みの機能がありません"));
-            sender.sendMessage(Component.text("§b========================================"));
+            sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§c登録済みの機能がありません"));
+            sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b========================================"));
             return true;
         }
 
@@ -141,11 +140,11 @@ public class PexCommand extends BaseCommand {
      * ヘルプを表示
      */
     private void showHelp(CommandSender sender) {
-        sender.sendMessage(Component.text("§b========== /pex コマンドヘルプ =========="));
-        sender.sendMessage(Component.text("§e/pex toggle <機能名>§f - 機能を切り替え（有効/無効）"));
-        sender.sendMessage(Component.text("§e/pex list§f - 登録済み機能一覧を表示"));
-        sender.sendMessage(Component.text("§e/pex reload <機能名>§f - 機能をリロード"));
-        sender.sendMessage(Component.text("§b======================================"));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b========== /pex コマンドヘルプ =========="));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e/pex toggle <機能名>§f - 機能を切り替え（有効/無効）"));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e/pex list§f - 登録済み機能一覧を表示"));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e/pex reload <機能名>§f - 機能をリロード"));
+        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§b======================================"));
     }
 
     @Override

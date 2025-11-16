@@ -8,6 +8,10 @@ import org.pexserver.koukunn.pexsurvival.Commands.help.HelpCommand;
 import org.pexserver.koukunn.pexsurvival.Module.NoJump.NoJumpFeature;
 import org.pexserver.koukunn.pexsurvival.Module.MobBoom.MobBoomFeature;
 import org.pexserver.koukunn.pexsurvival.Module.NaturalDisaster.NaturalDisasterFeature;
+import org.pexserver.koukunn.pexsurvival.Module.Shuffle.ShuffleFeature;
+import org.pexserver.koukunn.pexsurvival.Module.RandomBreak.ExplosiveBlockFeature;
+import org.pexserver.koukunn.pexsurvival.Module.TreeMine.TreeMineFeature;
+import org.pexserver.koukunn.pexsurvival.Module.MineOre.MineOreFeature;
 
 public final class Loader extends JavaPlugin {
 
@@ -45,6 +49,10 @@ public final class Loader extends JavaPlugin {
         featureManager.registerFeature(new NoJumpFeature());
         featureManager.registerFeature(new MobBoomFeature());
         featureManager.registerFeature(new NaturalDisasterFeature());
+        featureManager.registerFeature(new ShuffleFeature());
+        featureManager.registerFeature(new ExplosiveBlockFeature());
+        featureManager.registerFeature(new TreeMineFeature());
+        featureManager.registerFeature(new MineOreFeature());
         // 他の機能はここに追加できます
     }
 
